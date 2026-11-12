@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jardin de Papy la Binette</title>
+<meta name="description" content="Le carnet du jardinier : conseils, catalogues de plantes et calendrier lunaire.">
+<meta name="theme-color" content="#244a27">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="img/icone.png">
+<link rel="apple-touch-icon" href="img/icone.png">
+<link rel="preload" as="image" href="img/portillon-ouvert.webp">
+<link rel="prefetch" href="accueil.html">
+<style>
+  * { box-sizing: border-box; }
+  html, body { height: 100%; }
+  body {
+    margin: 0; min-height: 100vh; background: #244a27;
+    display: grid; place-items: center;
+    font-family: "Atkinson Hyperlegible", Georgia, serif;
+  }
+  .scene { position: relative; width: min(100vw, 150vh, 1536px); aspect-ratio: 3 / 2; overflow: hidden; }
+  .scene img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+  /* le portillon s'ouvre : l'image ouverte apparaît par-dessus la fermée */
+  .ouvert { opacity: 0; transition: opacity 2.6s ease-in-out; }
+  .scene.ouverte .ouvert { opacity: 1; }
+  /* la pancarte en forme de flèche est le bouton : la zone cliquable suit exactement sa forme */
+  .pancarte {
+    position: absolute; inset: 0; width: 100%; height: 100%;
+    border: 0; padding: 0; background: transparent; cursor: pointer; z-index: 2;
+    clip-path: polygon(5.6% 42.2%, 42.4% 39.6%, 49.6% 50.3%, 43.1% 60.4%, 6% 63.4%);
+  }
+  .pancarte:focus-visible { outline: none; }
+  /* contour lumineux qui encadre la flèche au survol */
+  .contour { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 1; pointer-events: none; overflow: visible; }
+  .contour polygon {
+    fill: rgba(255, 244, 200, 0); stroke: #fff6c8; stroke-width: 9; stroke-linejoin: round;
+    opacity: 0; transition: opacity .25s, fill .25s;
+    filter: drop-shadow(0 0 6px #ffd84a) drop-shadow(0 0 14px rgba(255, 200, 40, .8));
+  }
+  .scene:not(.ouverte) .pancarte:hover ~ .contour polygon,
+  .scene:not(.ouverte) .pancarte:focus-visible ~ .contour polygon {
+    opacity: 1; fill: rgba(255, 244, 200, .08); animation: lueur 1.4s ease-in-out infinite;
+  }
+  @keyframes lueur { 50% { stroke: #ffe680; } }
+  @media (prefers-reduced-motion: reduce) { .contour polygon { animation: none !important; } }
+  .indice {
+    position: absolute; bottom: 2.5%; left: 50%; transform: translateX(-50%); margin: 0;
+    background: rgba(255,249,230,.92); color: #3d2918; border-radius: 30px; padding: 10px 20px;
+    font-weight: bold; text-align: center; pointer-events: none; z-index: 3; white-space: nowrap;
+    transition: opacity .4s;
+  }
+  .scene.ouverte .indice { opacity: 0; }
+  /* fondu de sortie vers la page d'accueil */
+  .voile { position: fixed; inset: 0; background: #f3f6ee; opacity: 0; pointer-events: none; transition: opacity 1s ease-in; z-index: 10; }
+  body.sortie .voile { opacity: 1; }
+  .passer { position: absolute; top: 2%; right: 2%; z-index: 3; color: #fff; background: rgba(36,74,39,.55); border-radius: 20px; padding: 4px 12px; font-size: .85rem; text-decoration: none; }
+  .passer:hover, .passer:focus-visible { background: rgba(36,74,39,.85); }
+  @media (max-width: 650px) {
+    .indice { font-size: 12px; padding: 6px 12px; }
+    .passer { font-size: 11px; padding: 3px 9px; }
+  }
+  /* téléphone tenu droit : la consigne passe sous l'image, en plus grand */
+  @media (max-aspect-ratio: 1/1) {
+    .scene { overflow: visible; }
+    .scene img { border-radius: 0; }
+    .indice { top: calc(100% + 22px); bottom: auto; font-size: 16px; padding: 10px 18px; white-space: normal; width: max-content; max-width: 92vw; }
+    .passer { top: auto; bottom: calc(100% + 18px); right: 50%; transform: translateX(50%); font-size: 13px; }
+  }
+  @media (prefers-reduced-motion: reduce) { .ouvert { transition-duration: .8s; } .voile { transition-duration: .3s; } }
+</style>
+</head>
+<body>
+<main class="scene" id="scene" aria-label="Entrée du jardin de Papy la Binette">
+  <img src="img/portillon-ferme.webp" alt="Papy attend, accoudé à sa pancarte, devant le portillon fermé de son jardin" width="1536" height="1024">
+  <img class="ouvert" src="img/portillon-ouvert.webp" alt="Le portillon ouvert laisse voir le potager" width="1536" height="1024">
+  <button class="pancarte" id="ouvrir" type="button" aria-label="Ouvrir le portillon et entrer dans le jardin" title="Ouvrir le portillon"></button>
+  <svg class="contour" viewBox="0 0 1536 1024" preserveAspectRatio="none" aria-hidden="true"><polygon points="86,432 651,406 762,515 662,618 92,649"/></svg>
+  <p class="indice">Cliquez sur la pancarte pour ouvrir le portillon !</p>
+  <a class="passer" href="accueil.html">Entrer directement</a>
+</main>
+<div class="voile" aria-hidden="true"></div>
+<script>
+  (function () {
+    var scene = document.getElementById('scene');
+    var bouton = document.getElementById('ouvrir');
+    var reduit = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    var son = null;
+    try { son = new Audio('son/grincement.mp3'); son.preload = 'auto'; son.volume = 0.85; } catch (e) { son = null; }
+
+    // sur un écran tactile, on « touche » la pancarte
+    if (window.matchMedia && matchMedia('(hover: none)').matches) {
+      document.querySelector('.indice').textContent = 'Touchez la pancarte pour ouvrir le portillon !';
+    }
+
+    function entrer() {
+      try { sessionStorage.setItem('papy.portillon', '1'); } catch (e) {}
+      location.href = 'accueil.html';
+    }
+
+    bouton.addEventListener('click', function () {
+      if (scene.classList.contains('ouverte')) return;
+      bouton.disabled = true;
+      if (son) { try { son.currentTime = 0; var p = son.play(); if (p && p.catch) p.catch(function () {}); } catch (e) {} }
+      scene.classList.add('ouverte');
+      var ouverture = reduit ? 800 : 2700;
+      setTimeout(function () {
+        document.body.classList.add('sortie');
+        setTimeout(entrer, reduit ? 300 : 1000);
+      }, ouverture);
+    });
+  })();
+</script>
+</body>
+</html>
