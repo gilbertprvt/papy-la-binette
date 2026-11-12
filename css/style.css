@@ -541,3 +541,6 @@ a.bouton { text-decoration: none; display: inline-flex; align-items: center; }
 .lien-envoye ol { padding-left: 22px; } .lien-envoye li { margin: 4px 0; }
 .carte-icone { border: 2px solid var(--feuille); }
 #c-coller ol { padding-left: 22px; } #c-coller li { margin: 4px 0; }
+.case-voir { display: inline-flex; gap: 8px; align-items: center; font-size: .92rem; color: var(--gris); }
+.carte h3 { margin: 18px 0 6px; color: var(--feuille-fonce); }
+.form-compte input[type=password] { border: 1.5px solid #b9c9ad; border-radius: 8px; padding: 10px 12px; min-height: 44px; font-size: 1.05rem; }

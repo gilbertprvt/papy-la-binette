@@ -194,9 +194,26 @@
           '<p>Tout ce que vous saisissez ici est envoyé automatiquement, et les modifications faites sur vos autres appareils arrivent quand vous revenez sur le site.</p>' +
           '<p class="message" id="compte-etat" role="status"></p>' +
           '<div class="pp-actions"><button class="bouton" id="c-sync">🔄 Synchroniser maintenant</button><button class="bouton second" id="c-deco">Se déconnecter</button></div></section>' +
-          '<section class="carte"><h2>Sur un autre appareil</h2><p>Ouvrez le site, touchez <b>☁️ Se connecter</b> en haut, et saisissez la même adresse e-mail. Vous recevrez un code, et votre carnet apparaîtra.</p></section>';
+          '<section class="carte"><h2>🔑 Mot de passe</h2><p>Choisissez un mot de passe : sur vos autres appareils, vous pourrez vous connecter avec votre adresse e-mail et ce mot de passe, sans attendre d’e-mail.</p>' +
+          '<form id="f-mdp" class="form-compte"><label class="pp-champ">Nouveau mot de passe (8 caractères au moins) <input type="password" id="c-mdp" autocomplete="new-password" minlength="8" required></label>' +
+          '<label class="case-voir"><input type="checkbox" id="c-voir"> Afficher le mot de passe</label><button class="bouton" type="submit">Enregistrer le mot de passe</button></form><p class="message" id="c-msg3" role="status"></p></section>' +
+          '<section class="carte"><h2>Sur un autre appareil</h2><p>Ouvrez le site, touchez <b>☁️ Se connecter</b> en haut, puis connectez-vous avec votre adresse e-mail et votre mot de passe (ou avec le lien reçu par e-mail).</p></section>';
         majEtatCompte();
         c.querySelector('#c-sync').addEventListener('click', () => synchroniser());
+        c.querySelector('#c-voir').addEventListener('change', e => { c.querySelector('#c-mdp').type = e.target.checked ? 'text' : 'password'; });
+        c.querySelector('#f-mdp').addEventListener('submit', async e => {
+          e.preventDefault();
+          const m3 = c.querySelector('#c-msg3'), mdp = c.querySelector('#c-mdp').value;
+          if (mdp.length < 8) { m3.textContent = 'Le mot de passe doit faire au moins 8 caractères.'; return; }
+          m3.textContent = 'Enregistrement…';
+          try {
+            await appel('/auth/v1/user', { method: 'PUT', body: JSON.stringify({ password: mdp }) }, await jeton());
+            m3.textContent = '✅ Mot de passe enregistré. Notez-le bien : il servira sur vos autres appareils.';
+            c.querySelector('#c-mdp').value = '';
+          } catch (err) {
+            m3.textContent = /weak|short|characters/i.test(err.message) ? 'Ce mot de passe est trop simple. Mélangez lettres et chiffres, 8 caractères au moins.' : /different/i.test(err.message) ? 'C’est déjà votre mot de passe actuel.' : 'Le mot de passe n’a pas pu être enregistré : ' + err.message;
+          }
+        });
         c.querySelector('#c-deco').addEventListener('click', () => app.confirmer('Se déconnecter sur cet appareil ?\nVos données restent dans l’appareil, mais ne seront plus synchronisées.', 'Se déconnecter', () => { deconnecter(); rendre(); }));
         return;
       }
@@ -205,6 +222,10 @@
       c.innerHTML = '<h1>Synchronisation</h1><section class="carte"><h2>☁️ Retrouver son carnet sur tous ses appareils</h2>' +
         '<p>Connectez-vous avec votre adresse e-mail. Votre plan, votre agenda, vos relevés, vos suivis et vos parterres seront les mêmes sur l’ordinateur, la tablette et le téléphone.</p>' +
         (messageErreur ? '<p class="alerte-bloc">' + esc(messageErreur) + '</p>' : '') +
+        '<h3>🔑 Avec mon mot de passe</h3><form id="f-pass" class="form-compte"><label class="pp-champ">Adresse e-mail <input type="email" id="p-email" autocomplete="username" required value="' + esc(email) + '"></label>' +
+        '<label class="pp-champ">Mot de passe <input type="password" id="p-mdp" autocomplete="current-password" required></label><button class="bouton" type="submit">Me connecter</button></form>' +
+        '<p class="message" id="p-msg" role="status"></p>' +
+        '<h3>📧 Ou recevoir un lien par e-mail</h3><p class="m-sous">La première fois, ou si vous avez oublié votre mot de passe. Vous pourrez ensuite choisir un mot de passe dans cette page.</p>' +
         '<form id="f-email" class="form-compte"><label class="pp-champ">Adresse e-mail <input type="email" id="c-email" autocomplete="email" required value="' + esc(email) + '"></label>' +
         '<button class="bouton" type="submit">Recevoir le lien de connexion</button></form>' +
         '<div id="c-envoye" class="lien-envoye" hidden><p><b>📧 C’est parti !</b> Un e-mail intitulé <b>« Your sign-in link »</b> vient d’être envoyé à <b id="c-dest"></b>.</p>' +
@@ -219,6 +240,18 @@
         '<button class="bouton" type="submit">Me connecter</button></form><p class="message" id="c-msg2" role="status"></p></section>' +
         '<section class="carte"><h2>Et mes données actuelles ?</h2><p>Elles sont conservées. À la première connexion, ce qui est déjà dans cet appareil est réuni avec ce qui est déjà en ligne, sans rien perdre.</p>' +
         '</section>';
+      c.querySelector('#f-pass').addEventListener('submit', async e => {
+        e.preventDefault();
+        const pm = c.querySelector('#p-msg'), adr = c.querySelector('#p-email').value.trim().toLowerCase();
+        pm.textContent = 'Connexion…';
+        try {
+          garderSession(await appel('/auth/v1/token?grant_type=password', { method: 'POST', body: JSON.stringify({ email: adr, password: c.querySelector('#p-mdp').value }) }));
+          ecrireLS(CLE_EMAIL, adr); messageErreur = ''; etat = 'ok'; majBouton();
+          await synchroniser(); rendre();
+        } catch (err) {
+          pm.textContent = err.statut === 400 || err.statut === 401 ? 'Adresse ou mot de passe incorrect. Pas encore de mot de passe ? Connectez-vous une première fois avec le lien par e-mail, puis choisissez-en un.' : err.statut === 429 ? 'Trop d’essais. Patientez quelques minutes.' : 'La connexion n’a pas abouti : ' + err.message;
+        }
+      });
       const fE = c.querySelector('#f-email'), zEnv = c.querySelector('#c-envoye'), msg = c.querySelector('#c-msg');
       fE.addEventListener('submit', async e => {
         e.preventDefault();
@@ -288,6 +321,8 @@
     /* ---------- quand synchroniser ---------- */
     if (!disponible) { majBouton(); return; }
     retourDuLien();
+    // le lien peut aussi arriver dans un onglet où le site est déjà ouvert
+    window.addEventListener('hashchange', () => { if (retourDuLien()) rendre(); });
     stock.surModif(cle => { if (!LOCAUX.has(cle) && session) planifier(800); });
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') planifier(200); else if (session) synchroniser(); });
     window.addEventListener('online', () => planifier(200));
