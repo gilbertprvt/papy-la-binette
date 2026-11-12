@@ -9,6 +9,14 @@
   /* ---------- Stockage dans l'appareil ---------- */
   const PREFIXE = 'monjardin.';
   const memoire = {};
+  // chaque modification note son heure, pour que la synchronisation garde toujours la plus récente
+  const HORLOGE = 'papy.horloge';
+  const ecouteurs = [];
+  function lireHorloge() { try { return JSON.parse(localStorage.getItem(HORLOGE)) || {}; } catch (e) { return memoire.__horloge || {}; } }
+  function noterHeure(cle, t) {
+    const h = lireHorloge(); h[cle] = t; memoire.__horloge = h;
+    try { localStorage.setItem(HORLOGE, JSON.stringify(h)); } catch (e) { /* stockage indisponible */ }
+  }
   const stock = {
     lire(cle, defaut) {
       try { const v = localStorage.getItem(PREFIXE + cle); return v === null ? defaut : JSON.parse(v); }
@@ -17,7 +25,17 @@
     ecrire(cle, val) {
       memoire[cle] = val;
       try { localStorage.setItem(PREFIXE + cle, JSON.stringify(val)); } catch (e) { /* stockage indisponible */ }
+      noterHeure(cle, Date.now());
+      ecouteurs.forEach(f => { try { f(cle); } catch (e) { /* rien */ } });
     },
+    // valeur reçue d'un autre appareil : enregistrée avec son heure d'origine, sans relancer d'envoi
+    appliquer(cle, val, t) {
+      memoire[cle] = val;
+      try { localStorage.setItem(PREFIXE + cle, JSON.stringify(val)); } catch (e) { /* stockage indisponible */ }
+      noterHeure(cle, t);
+    },
+    horloge: lireHorloge,
+    surModif(fn) { ecouteurs.push(fn); },
     tout() {
       const res = {};
       try {
@@ -25,7 +43,7 @@
           const k = localStorage.key(i);
           if (k.startsWith(PREFIXE)) res[k.slice(PREFIXE.length)] = JSON.parse(localStorage.getItem(k));
         }
-      } catch (e) { Object.assign(res, memoire); }
+      } catch (e) { for (const k in memoire) if (k !== '__horloge') res[k] = memoire[k]; }
       return res;
     }
   };
@@ -51,13 +69,13 @@
 
   /* ---------- Navigation ---------- */
   const PARENTS = {
-    jardin: '', conseil: '', lune: '', parterre: '', agenda: '', meteo: '',
+    jardin: '', conseil: '', lune: '', parterre: '', agenda: '', meteo: '', compte: '',
     saisons: 'conseil', engrais: 'conseil', associations: 'conseil', plantes: 'conseil', fruits: 'conseil', aromatiques: 'conseil',
     calendrier: 'lune', 'meilleurs-jours': 'lune', 'fiches-lune': 'lune',
     fleurs: 'parterre', parterres: 'parterre', planter: 'parterre', plan: 'jardin', 'suivi-plantations': 'jardin', depenses: 'jardin', archives: 'jardin'
   };
   const NOMS = {
-    '': 'Accueil', jardin: 'Mon Jardin', conseil: 'Conseil & Culture', lune: 'Calendrier lunaire', parterre: 'Parterre fleuri',
+    '': 'Accueil', compte: 'Synchronisation', jardin: 'Mon Jardin', conseil: 'Conseil & Culture', lune: 'Calendrier lunaire', parterre: 'Parterre fleuri',
     agenda: 'Agenda personnel', meteo: 'Relevés météo', saisons: 'Conseils saisonniers', engrais: 'Sol & Engrais',
     associations: 'Associations', plantes: 'Plantes potagères', fruits: 'Fruits rouges', aromatiques: 'Aromatiques',
     calendrier: 'Calendrier', 'meilleurs-jours': 'Meilleurs jours', 'fiches-lune': 'Fiches plantes', fleurs: 'Catalogue fleurs', parterres: 'Créer un parterre', planter: 'Planter un parterre',

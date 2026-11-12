@@ -25,6 +25,7 @@ sont enregistrées automatiquement dans le navigateur de chaque appareil.
 - `js/carnet.js` : l’agenda et les relevés météo
 - `js/suivis.js` : le suivi des plantations, les dépenses et les archives
 - `js/parterres.js` : créer un parterre fleuri et y planter les fleurs du catalogue
+- `js/sync.js` et `js/config.js` : la synchronisation entre appareils (Supabase)
 - `js/lune.js` : les calculs lunaires (phases, constellations, nœuds, périgée, apogée)
 - `data/contenu.js` : les textes et catalogues repris de l'application
 - `img/` : les illustrations et les photos de fleurs
