@@ -201,6 +201,7 @@
         return;
       }
       const email = lireLS(CLE_EMAIL, '');
+      const icone = (window.matchMedia && matchMedia('(display-mode: standalone)').matches) || navigator.standalone === true;
       c.innerHTML = '<h1>Synchronisation</h1><section class="carte"><h2>☁️ Retrouver son carnet sur tous ses appareils</h2>' +
         '<p>Connectez-vous avec votre adresse e-mail. Votre plan, votre agenda, vos relevés, vos suivis et vos parterres seront les mêmes sur l’ordinateur, la tablette et le téléphone.</p>' +
         (messageErreur ? '<p class="alerte-bloc">' + esc(messageErreur) + '</p>' : '') +
@@ -211,8 +212,13 @@
         '<p class="m-sous">Le lien n’est valable qu’une heure et une seule fois. Pas reçu ? Patientez quelques minutes avant d’en redemander un : l’envoi est limité à quelques e-mails par heure.</p>' +
         '<button class="bouton second" type="button" id="c-autre">Renvoyer ou changer d’adresse</button></div>' +
         '<p class="message" id="c-msg" role="status"></p></section>' +
+        '<section class="carte' + (icone ? ' carte-icone' : '') + '" id="c-coller"><h2>📱 ' + (icone ? 'Vous êtes dans l’icône de l’écran d’accueil' : 'Site ouvert depuis l’icône de l’écran d’accueil ?') + '</h2>' +
+        '<p>Sur iPhone et iPad, l’icône garde ses propres données et le lien de l’e-mail s’ouvrirait dans Safari. Faites plutôt ceci :</p>' +
+        '<ol><li>Demandez le lien ci-dessus.</li><li>Dans l’e-mail, <b>restez appuyé</b> sur « Sign in » puis choisissez <b>Copier le lien</b>.</li><li>Revenez ici, collez-le dans la case et touchez <b>Me connecter</b>.</li></ol>' +
+        '<form id="f-lien" class="form-compte"><label class="pp-champ">Lien « Sign in » copié <input type="text" id="c-lien" autocomplete="off" autocapitalize="off" spellcheck="false" placeholder="https://…supabase.co/auth/v1/verify?token=…"></label>' +
+        '<button class="bouton" type="submit">Me connecter</button></form><p class="message" id="c-msg2" role="status"></p></section>' +
         '<section class="carte"><h2>Et mes données actuelles ?</h2><p>Elles sont conservées. À la première connexion, ce qui est déjà dans cet appareil est réuni avec ce qui est déjà en ligne, sans rien perdre.</p>' +
-        '<p class="m-sous">Sur iPhone ou iPad, si vous avez mis le site sur l’écran d’accueil, connectez-vous depuis Safari puis rouvrez le site depuis Safari : l’icône de l’écran d’accueil garde ses propres données.</p></section>';
+        '</section>';
       const fE = c.querySelector('#f-email'), zEnv = c.querySelector('#c-envoye'), msg = c.querySelector('#c-msg');
       fE.addEventListener('submit', async e => {
         e.preventDefault();
@@ -228,7 +234,34 @@
         }
       });
       c.querySelector('#c-autre').addEventListener('click', () => { zEnv.hidden = true; fE.hidden = false; msg.textContent = ''; });
+      c.querySelector('#f-lien').addEventListener('submit', async e => {
+        e.preventDefault();
+        const m2 = c.querySelector('#c-msg2');
+        m2.textContent = 'Connexion…';
+        try { await connecterParLien(c.querySelector('#c-lien').value.trim()); rendre(); }
+        catch (err) { m2.textContent = err.message; }
+      });
     };
+
+    // lien de l'e-mail collé à la main : on le valide directement auprès de Supabase, sans passer par Safari
+    async function connecterParLien(texte) {
+      let u;
+      try { u = new URL(texte); } catch (e) { throw new Error('Ce texte n’est pas un lien. Restez appuyé sur « Sign in » dans l’e-mail et choisissez « Copier le lien ».'); }
+      const h = new URLSearchParams(u.hash.replace(/^#/, ''));
+      let s;
+      if (h.get('access_token')) {
+        const usr = await appel('/auth/v1/user', { method: 'GET' }, h.get('access_token'));
+        s = { access_token: h.get('access_token'), refresh_token: h.get('refresh_token'), expires_in: +h.get('expires_in') || 3600, user: usr };
+      } else {
+        const jeton = u.searchParams.get('token') || u.searchParams.get('token_hash');
+        if (!jeton) throw new Error('Ce lien ne contient pas de connexion. Copiez bien le lien « Sign in » de l’e-mail « Your sign-in link ».');
+        const type = u.searchParams.get('type') || 'magiclink';
+        try { s = await appel('/auth/v1/verify', { method: 'POST', body: JSON.stringify({ type, token_hash: jeton }) }); }
+        catch (err) { throw new Error(err.statut && err.statut < 500 ? 'Ce lien a expiré ou a déjà servi. Demandez-en un nouveau et collez-le sans l’ouvrir.' : 'La connexion n’a pas abouti : ' + err.message); }
+      }
+      garderSession(s); messageErreur = ''; etat = 'ok'; majBouton();
+      await synchroniser();
+    }
 
     /* ---------- retour depuis le lien « Sign in » de l'e-mail ----------
        Supabase renvoie vers le site avec la connexion dans l'adresse (#access_token=…). */
