@@ -1,5 +1,5 @@
 /* Garde le site disponible hors connexion une fois visité */
-const CACHE = 'papy-la-binette-v7';
+const CACHE = 'papy-la-binette-v8';
 self.addEventListener('install', e => self.skipWaiting());
 self.addEventListener('activate', e => e.waitUntil(clients.claim()));
 self.addEventListener('fetch', e => {
