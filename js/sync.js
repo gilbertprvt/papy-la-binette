@@ -205,47 +205,56 @@
         '<p>Connectez-vous avec votre adresse e-mail. Votre plan, votre agenda, vos relevés, vos suivis et vos parterres seront les mêmes sur l’ordinateur, la tablette et le téléphone.</p>' +
         (messageErreur ? '<p class="alerte-bloc">' + esc(messageErreur) + '</p>' : '') +
         '<form id="f-email" class="form-compte"><label class="pp-champ">Adresse e-mail <input type="email" id="c-email" autocomplete="email" required value="' + esc(email) + '"></label>' +
-        '<button class="bouton" type="submit">Recevoir mon code</button></form>' +
-        '<form id="f-code" class="form-compte" hidden><p>Un code vient d’être envoyé à <b id="c-dest"></b>. Regardez vos e-mails (et les indésirables).</p>' +
-        '<label class="pp-champ">Code reçu <input type="text" id="c-code" inputmode="numeric" autocomplete="one-time-code" maxlength="10" required></label>' +
-        '<div class="pp-actions"><button class="bouton" type="submit">Valider</button><button class="bouton second" type="button" id="c-autre">Changer d’adresse</button></div></form>' +
+        '<button class="bouton" type="submit">Recevoir le lien de connexion</button></form>' +
+        '<div id="c-envoye" class="lien-envoye" hidden><p><b>📧 C’est parti !</b> Un e-mail intitulé <b>« Your sign-in link »</b> vient d’être envoyé à <b id="c-dest"></b>.</p>' +
+        '<ol><li>Ouvrez cet e-mail <b>sur cet appareil-ci</b> (regardez aussi dans les indésirables).</li><li>Touchez le lien <b>« Sign in »</b>.</li><li>Le site s’ouvre et votre carnet se synchronise tout seul.</li></ol>' +
+        '<p class="m-sous">Le lien n’est valable qu’une heure et une seule fois. Pas reçu ? Patientez quelques minutes avant d’en redemander un : l’envoi est limité à quelques e-mails par heure.</p>' +
+        '<button class="bouton second" type="button" id="c-autre">Renvoyer ou changer d’adresse</button></div>' +
         '<p class="message" id="c-msg" role="status"></p></section>' +
-        '<section class="carte"><h2>Et mes données actuelles ?</h2><p>Elles sont conservées. À la première connexion, ce qui est déjà dans cet appareil est réuni avec ce qui est déjà en ligne : pour chaque partie (agenda, plan, relevés…), la version la plus récente est gardée.</p></section>';
-      const fE = c.querySelector('#f-email'), fC = c.querySelector('#f-code'), msg = c.querySelector('#c-msg');
-      let adresse = '';
+        '<section class="carte"><h2>Et mes données actuelles ?</h2><p>Elles sont conservées. À la première connexion, ce qui est déjà dans cet appareil est réuni avec ce qui est déjà en ligne, sans rien perdre.</p>' +
+        '<p class="m-sous">Sur iPhone ou iPad, si vous avez mis le site sur l’écran d’accueil, connectez-vous depuis Safari puis rouvrez le site depuis Safari : l’icône de l’écran d’accueil garde ses propres données.</p></section>';
+      const fE = c.querySelector('#f-email'), zEnv = c.querySelector('#c-envoye'), msg = c.querySelector('#c-msg');
       fE.addEventListener('submit', async e => {
         e.preventDefault();
-        adresse = c.querySelector('#c-email').value.trim().toLowerCase();
+        const adresse = c.querySelector('#c-email').value.trim().toLowerCase();
         if (!/^\S+@\S+\.\S+$/.test(adresse)) { msg.textContent = 'Vérifiez l’adresse e-mail.'; return; }
-        msg.textContent = 'Envoi du code…';
+        msg.textContent = 'Envoi du lien…';
         try {
-          await appel('/auth/v1/otp', { method: 'POST', body: JSON.stringify({ email: adresse, create_user: true }) });
-          ecrireLS(CLE_EMAIL, adresse);
-          fE.hidden = true; fC.hidden = false; c.querySelector('#c-dest').textContent = adresse; msg.textContent = '';
-          c.querySelector('#c-code').focus();
+          await appel('/auth/v1/otp?redirect_to=' + encodeURIComponent(adresseRetour()), { method: 'POST', body: JSON.stringify({ email: adresse, create_user: true }) });
+          ecrireLS(CLE_EMAIL, adresse); messageErreur = '';
+          fE.hidden = true; zEnv.hidden = false; c.querySelector('#c-dest').textContent = adresse; msg.textContent = '';
         } catch (err) {
-          msg.textContent = err.statut === 429 ? 'Trop de demandes de code en peu de temps. Patientez quelques minutes avant de réessayer.' : 'Le code n’a pas pu être envoyé : ' + err.message;
+          msg.textContent = err.statut === 429 ? 'Trop de demandes en peu de temps. Patientez quelques minutes avant de réessayer (l’envoi est limité à quelques e-mails par heure).' : 'Le lien n’a pas pu être envoyé : ' + err.message;
         }
       });
-      c.querySelector('#c-autre').addEventListener('click', () => { fC.hidden = true; fE.hidden = false; msg.textContent = ''; });
-      fC.addEventListener('submit', async e => {
-        e.preventDefault();
-        const code = c.querySelector('#c-code').value.replace(/\s/g, '');
-        msg.textContent = 'Vérification…';
-        try {
-          garderSession(await appel('/auth/v1/verify', { method: 'POST', body: JSON.stringify({ type: 'email', email: adresse, token: code }) }));
-          messageErreur = ''; etat = 'ok';
-          msg.textContent = 'Connecté. Réunion de vos données…';
-          await synchroniser();
-          rendre();
-        } catch (err) {
-          msg.textContent = err.statut && err.statut < 500 ? 'Ce code n’est pas bon ou a expiré. Vérifiez-le, ou demandez-en un nouveau.' : 'La vérification n’a pas abouti : ' + err.message;
-        }
-      });
+      c.querySelector('#c-autre').addEventListener('click', () => { zEnv.hidden = true; fE.hidden = false; msg.textContent = ''; });
     };
+
+    /* ---------- retour depuis le lien « Sign in » de l'e-mail ----------
+       Supabase renvoie vers le site avec la connexion dans l'adresse (#access_token=…). */
+    function adresseRetour() { return location.origin + location.pathname.replace(/[^/]*$/, '') + 'accueil.html'; }
+    function retourDuLien() {
+      const h = location.hash.replace(/^#/, '');
+      if (!/(^|&)(access_token|error_description|error)=/.test(h)) return false;
+      const p = new URLSearchParams(h);
+      try { history.replaceState(null, '', location.pathname + location.search + '#compte'); } catch (e) { location.hash = 'compte'; }
+      if (p.get('error') || p.get('error_description')) {
+        messageErreur = /expired|invalid/i.test(p.get('error_description') || p.get('error_code') || '') ? 'Ce lien de connexion a expiré ou a déjà servi. Demandez-en un nouveau ci-dessous.' : 'La connexion n’a pas abouti : ' + (p.get('error_description') || p.get('error'));
+        return true;
+      }
+      const jt = p.get('access_token');
+      etat = 'envoi';
+      appel('/auth/v1/user', { method: 'GET' }, jt).then(u => {
+        garderSession({ access_token: jt, refresh_token: p.get('refresh_token'), expires_in: +p.get('expires_in') || 3600, expires_at: +p.get('expires_at') || 0, user: u });
+        messageErreur = ''; etat = 'ok'; majBouton();
+        return synchroniser();
+      }).then(() => rendre()).catch(err => { etat = 'hors'; messageErreur = 'La connexion n’a pas abouti : ' + err.message; majBouton(); rendre(); });
+      return true;
+    }
 
     /* ---------- quand synchroniser ---------- */
     if (!disponible) { majBouton(); return; }
+    retourDuLien();
     stock.surModif(cle => { if (!LOCAUX.has(cle) && session) planifier(800); });
     document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') planifier(200); else if (session) synchroniser(); });
     window.addEventListener('online', () => planifier(200));

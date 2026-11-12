@@ -537,3 +537,5 @@ a.bouton { text-decoration: none; display: inline-flex; align-items: center; }
 #c-code { letter-spacing: .3em; font-size: 1.4rem; max-width: 220px; }
 .bandeau-sync { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 70; background: #fff; border: 2px solid var(--feuille); border-radius: 12px; padding: 10px 14px; display: flex; gap: 12px; align-items: center; box-shadow: 0 8px 24px rgba(0,0,0,.15); max-width: calc(100vw - 24px); }
 @media (max-width: 600px) { .barre .sync-lien .long { display: none; } }
+.form-compte[hidden], .lien-envoye[hidden] { display: none; }
+.lien-envoye ol { padding-left: 22px; } .lien-envoye li { margin: 4px 0; }
