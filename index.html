@@ -2,7 +2,6 @@
 <html lang="fr">
 <head>
 <meta charset="utf-8">
-<script>if (/(access_token|error_description)=/.test(location.hash)) location.replace('accueil.html' + location.hash);</script>
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Jardin de Papy la Binette</title>
 <meta name="description" content="Le carnet du jardinier : conseils, catalogues de plantes et calendrier lunaire.">
@@ -86,6 +85,9 @@
 </main>
 <div class="voile" aria-hidden="true"></div>
 <script>
+  if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost') && !/claude|anthropic/.test(location.hostname)) {
+    navigator.serviceWorker.register('sw.js').catch(function () {});
+  }
   (function () {
     var scene = document.getElementById('scene');
     var bouton = document.getElementById('ouvrir');

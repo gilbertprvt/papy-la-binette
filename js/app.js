@@ -69,13 +69,13 @@
 
   /* ---------- Navigation ---------- */
   const PARENTS = {
-    jardin: '', conseil: '', lune: '', parterre: '', agenda: '', meteo: '', compte: '',
+    jardin: '', conseil: '', lune: '', parterre: '', agenda: '', meteo: '',
     saisons: 'conseil', engrais: 'conseil', associations: 'conseil', plantes: 'conseil', fruits: 'conseil', aromatiques: 'conseil',
     calendrier: 'lune', 'meilleurs-jours': 'lune', 'fiches-lune': 'lune',
     fleurs: 'parterre', parterres: 'parterre', planter: 'parterre', plan: 'jardin', 'suivi-plantations': 'jardin', depenses: 'jardin', archives: 'jardin'
   };
   const NOMS = {
-    '': 'Accueil', compte: 'Synchronisation', jardin: 'Mon Jardin', conseil: 'Conseil & Culture', lune: 'Calendrier lunaire', parterre: 'Parterre fleuri',
+    '': 'Accueil', jardin: 'Mon Jardin', conseil: 'Conseil & Culture', lune: 'Calendrier lunaire', parterre: 'Parterre fleuri',
     agenda: 'Agenda personnel', meteo: 'Relevés météo', saisons: 'Conseils saisonniers', engrais: 'Sol & Engrais',
     associations: 'Associations', plantes: 'Plantes potagères', fruits: 'Fruits rouges', aromatiques: 'Aromatiques',
     calendrier: 'Calendrier', 'meilleurs-jours': 'Meilleurs jours', 'fiches-lune': 'Fiches plantes', fleurs: 'Catalogue fleurs', parterres: 'Créer un parterre', planter: 'Planter un parterre',
@@ -514,7 +514,7 @@
   }
 
   /* ---------- Démarrage ---------- */
-  if ('serviceWorker' in navigator && location.protocol === 'https:' && !/claude|anthropic/.test(location.hostname)) {
+  if ('serviceWorker' in navigator && (location.protocol === 'https:' || location.hostname === 'localhost') && !/claude|anthropic/.test(location.hostname)) {
     navigator.serviceWorker.register('sw.js').catch(() => {});
   }
   (window.PapyExtensions || []).forEach(f => f({ PAGES, stock, esc, sansAccent, D, rendre, MOIS, MOIS_COURT, JOURS, cap, aujourdhui, memeJour, jourSemaine, dateLongue, iso, deIso, dateFr, nombre, euros, fenetre, confirmer, Lune: L }));

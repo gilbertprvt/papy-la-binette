@@ -529,18 +529,5 @@ a.bouton { text-decoration: none; display: inline-flex; align-items: center; }
 .pa-mise > * { min-width: 0; }
 @media (max-width: 600px) { .plan-annee select { flex: 1; } }
 
-/* ---------- Synchronisation ---------- */
-.sync-lien.sync-hors { background: rgba(242, 193, 78, .25); border-color: var(--soleil); }
-.sync-lien.sync-erreur { background: rgba(200, 80, 60, .3); }
-.form-compte { display: flex; flex-direction: column; gap: 10px; max-width: 420px; margin: 12px 0; }
-.form-compte input[type=email], .form-compte input[type=text] { border: 1.5px solid #b9c9ad; border-radius: 8px; padding: 10px 12px; min-height: 44px; font-size: 1.05rem; }
-#c-code { letter-spacing: .3em; font-size: 1.4rem; max-width: 220px; }
-.bandeau-sync { position: fixed; left: 50%; bottom: 18px; transform: translateX(-50%); z-index: 70; background: #fff; border: 2px solid var(--feuille); border-radius: 12px; padding: 10px 14px; display: flex; gap: 12px; align-items: center; box-shadow: 0 8px 24px rgba(0,0,0,.15); max-width: calc(100vw - 24px); }
-@media (max-width: 600px) { .barre .sync-lien .long { display: none; } }
-.form-compte[hidden], .lien-envoye[hidden] { display: none; }
-.lien-envoye ol { padding-left: 22px; } .lien-envoye li { margin: 4px 0; }
-.carte-icone { border: 2px solid var(--feuille); }
-#c-coller ol { padding-left: 22px; } #c-coller li { margin: 4px 0; }
-.case-voir { display: inline-flex; gap: 8px; align-items: center; font-size: .92rem; color: var(--gris); }
+
 .carte h3 { margin: 18px 0 6px; color: var(--feuille-fonce); }
-.form-compte input[type=password] { border: 1.5px solid #b9c9ad; border-radius: 8px; padding: 10px 12px; min-height: 44px; font-size: 1.05rem; }
