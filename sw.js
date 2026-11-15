@@ -1,12 +1,12 @@
 /* Papy la Binette — garde tout le site dans l'appareil pour l'utiliser sans Internet.
    À la première visite, toutes les pages, images et sons sont rangés en mémoire ;
    ensuite le site essaie d'abord Internet (pour les mises à jour) et se replie sur la mémoire. */
-const CACHE = 'papy-la-binette-20261114a';
+const CACHE = 'papy-la-binette-20261115a';
 const FICHIERS = [
  "./",
  "accueil.html",
- "css/style.css?v=20261114a",
- "data/contenu.js?v=20261114a",
+ "css/style.css?v=20261115a",
+ "data/contenu.js?v=20261115a",
  "img/accueil.webp",
  "img/fleurs/abelia.webp",
  "img/fleurs/achillee.webp",
@@ -129,10 +129,10 @@ const FICHIERS = [
  "img/fleurs/vitadenia.webp",
  "img/fleurs/weigela.webp",
  "img/fleurs/zinnia.webp",
- "img/icone-512.png",
- "img/icone-apple.png",
- "img/icone-maskable.png",
- "img/icone.png",
+ "img/icone-512.png?v=20261115a",
+ "img/icone-apple.png?v=20261115a",
+ "img/icone-maskable.png?v=20261115a",
+ "img/icone.png?v=20261115a",
  "img/implantation.webp",
  "img/lune.webp",
  "img/parterre.webp",
@@ -140,15 +140,15 @@ const FICHIERS = [
  "img/portillon-ouvert.webp",
  "img/pratique.webp",
  "index.html",
- "js/app.js?v=20261114a",
- "js/carnet.js?v=20261114a",
- "js/lune.js?v=20261114a",
- "js/parterres.js?v=20261114a",
- "js/plan.js?v=20261114a",
- "js/suivis.js?v=20261114a",
+ "js/app.js?v=20261115a",
+ "js/carnet.js?v=20261115a",
+ "js/lune.js?v=20261115a",
+ "js/parterres.js?v=20261115a",
+ "js/plan.js?v=20261115a",
+ "js/suivis.js?v=20261115a",
  "manifest.webmanifest",
  "son/grincement.mp3",
- "vendor/astronomy.browser.min.js?v=20261114a"
+ "vendor/astronomy.browser.min.js?v=20261115a"
 ];
 
 self.addEventListener('install', e => {
